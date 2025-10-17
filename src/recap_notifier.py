@@ -172,6 +172,10 @@ class RecapNotifier:
             lines.append("")
             lines.append("💤 <i>No trades in the last 24 hours</i>")
 
+        # Add footer separator
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
         return "\n".join(lines)
 
     def _format_trade(self, trade: Dict) -> str:
