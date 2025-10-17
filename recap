@@ -1,0 +1,5 @@
+#!/bin/bash
+# Quick command to run 24-hour recap
+
+source venv/bin/activate
+python -m src.main
