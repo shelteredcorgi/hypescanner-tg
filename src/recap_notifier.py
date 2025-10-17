@@ -114,30 +114,60 @@ class RecapNotifier:
         ]
 
         # Add trades section if there are any
-        # Limit to 20 most recent trades to avoid message length issues
-        MAX_TRADES = 20
+        # Group by asset, show top 5 assets, max 4 trades per asset
+        MAX_ASSETS = 5
+        MAX_TRADES_PER_ASSET = 4
 
         if trades:
             lines.append("")
-
-            if len(trades) > MAX_TRADES:
-                lines.append(f"<b>━━━ LATEST {MAX_TRADES} TRADES ━━━</b>")
-                lines.append(f"<i>Showing {MAX_TRADES} of {trade_count} total</i>")
-            else:
-                lines.append("<b>━━━ TRADES ━━━</b>")
-
+            lines.append("<b>━━━ TRADES ━━━</b>")
             lines.append("")
 
-            # Show only first MAX_TRADES
-            for trade in trades[:MAX_TRADES]:
-                trade_line = self._format_trade(trade)
-                lines.append(trade_line)
+            # Group trades by asset
+            trades_by_asset = {}
+            for trade in trades:
+                asset = trade["asset"]
+                if asset not in trades_by_asset:
+                    trades_by_asset[asset] = []
+                trades_by_asset[asset].append(trade)
 
-            # Add note if there are more trades
-            if len(trades) > MAX_TRADES:
-                remaining = len(trades) - MAX_TRADES
+            # Sort assets by most recent trade (first trade in each group is most recent)
+            sorted_assets = sorted(
+                trades_by_asset.keys(),
+                key=lambda asset: trades_by_asset[asset][0]["time"],
+                reverse=True
+            )
+
+            # Show top 5 assets only
+            assets_to_show = sorted_assets[:MAX_ASSETS]
+
+            for i, asset in enumerate(assets_to_show):
+                asset_trades = trades_by_asset[asset]
+                total_asset_trades = len(asset_trades)
+
+                # Show asset header
+                lines.append(f"<b>━ {asset} ({total_asset_trades} trade{'s' if total_asset_trades != 1 else ''}) ━</b>")
+
+                # Show max 4 trades for this asset
+                trades_to_show = asset_trades[:MAX_TRADES_PER_ASSET]
+                for trade in trades_to_show:
+                    trade_line = self._format_trade(trade)
+                    lines.append(trade_line)
+
+                # Add "... and X more trades" if there are more
+                if total_asset_trades > MAX_TRADES_PER_ASSET:
+                    remaining = total_asset_trades - MAX_TRADES_PER_ASSET
+                    lines.append(f"<i>... and {remaining} more trade{'s' if remaining != 1 else ''}</i>")
+
+                # Add spacing between assets (but not after the last one)
+                if i < len(assets_to_show) - 1:
+                    lines.append("")
+
+            # Add note if there are more assets not shown
+            if len(sorted_assets) > MAX_ASSETS:
+                remaining_assets = len(sorted_assets) - MAX_ASSETS
                 lines.append("")
-                lines.append(f"<i>... and {remaining} more trades</i>")
+                lines.append(f"<i>... and {remaining_assets} more asset{'s' if remaining_assets != 1 else ''} traded</i>")
         else:
             lines.append("")
             lines.append("💤 <i>No trades in the last 24 hours</i>")

@@ -57,8 +57,8 @@ class RecapGenerator:
             # Fetch 24h trade history
             fills = self.api.get_user_fills_24h(wallet_address)
 
-            # Build recap
-            recap = WalletRecap(wallet_address, positions, fills)
+            # Build recap with API client for asset name resolution
+            recap = WalletRecap(wallet_address, positions, fills, api_client=self.api)
             summary = recap.build_summary()
 
             self.logger.info(

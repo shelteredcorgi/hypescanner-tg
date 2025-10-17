@@ -36,6 +36,9 @@ class HyperliquidAPI:
         self.info = Info(api_url, skip_ws=True)
         logger.info(f"Initialized Hyperliquid SDK with {api_url}")
 
+        # Cache for asset metadata mapping
+        self._asset_name_cache = None
+
     def _retry_wrapper(self, func, *args, **kwargs):
         """
         Wrapper to add retry logic to SDK calls.
@@ -291,6 +294,54 @@ class HyperliquidAPI:
         except (KeyError, ValueError, TypeError) as e:
             logger.error(f"Failed to get account value for {wallet_address}: {e}")
             return None
+
+    def get_asset_name_mapping(self) -> Dict[str, str]:
+        """
+        Build mapping from asset indices to ticker names.
+        Caches the result to avoid repeated API calls.
+
+        Returns:
+            Dictionary mapping "@123" style indices to ticker names
+        """
+        if self._asset_name_cache is not None:
+            return self._asset_name_cache
+
+        try:
+            meta = self.get_meta_info()
+            if not meta or "universe" not in meta:
+                logger.warning("Failed to fetch asset metadata")
+                return {}
+
+            # Build mapping from index to name
+            mapping = {}
+            for i, asset in enumerate(meta["universe"]):
+                name = asset.get("name", f"@{i}")
+                mapping[f"@{i}"] = name
+                logger.debug(f"Asset mapping: @{i} -> {name}")
+
+            self._asset_name_cache = mapping
+            logger.info(f"Cached {len(mapping)} asset name mappings")
+            return mapping
+
+        except Exception as e:
+            logger.error(f"Failed to build asset name mapping: {e}")
+            return {}
+
+    def resolve_asset_name(self, asset_id: str) -> str:
+        """
+        Convert asset ID (e.g., "@107") to proper ticker name.
+
+        Args:
+            asset_id: Asset identifier (may be "@123" or already a ticker)
+
+        Returns:
+            Proper ticker name or original if not found
+        """
+        if not asset_id.startswith("@"):
+            return asset_id
+
+        mapping = self.get_asset_name_mapping()
+        return mapping.get(asset_id, asset_id)
 
     @staticmethod
     def _format_address(address: str) -> str:

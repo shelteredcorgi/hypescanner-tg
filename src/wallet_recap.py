@@ -4,7 +4,7 @@ Calculates P&L, trade counts, and formats trade history.
 """
 
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class WalletRecap:
     """Builds comprehensive 24-hour trading recap for a wallet."""
 
-    def __init__(self, wallet_address: str, positions: List[Dict], fills: List[Dict]):
+    def __init__(self, wallet_address: str, positions: List[Dict], fills: List[Dict], api_client=None):
         """
         Initialize recap builder.
 
@@ -21,10 +21,12 @@ class WalletRecap:
             wallet_address: Wallet being analyzed
             positions: Current open positions
             fills: Trade fills from last 24 hours
+            api_client: Optional HyperliquidAPI instance for asset name resolution
         """
         self.wallet = wallet_address
         self.positions = positions
         self.fills = fills
+        self.api_client = api_client
 
     def build_summary(self) -> Dict:
         """
@@ -91,6 +93,11 @@ class WalletRecap:
             try:
                 # Parse fill data
                 coin = fill.get("coin", "UNKNOWN")
+
+                # Resolve asset name if it's an ID like "@107"
+                if self.api_client and coin.startswith("@"):
+                    coin = self.api_client.resolve_asset_name(coin)
+
                 direction = fill.get("dir", "")  # e.g., "Open Long", "Close Short"
                 price = float(fill.get("px", 0))
                 size = float(fill.get("sz", 0))
