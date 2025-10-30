@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hyperliquid Scanner - Track Whale Traders</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(180deg,#0A2E2E 0%,#056F50 30%,#00C087 100%);color:#e0e6ed;line-height:1.6;overflow-x:hidden;min-height:100vh;background-attachment:fixed}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.sh{padding:16px 20px 12px;background:transparent;display:flex;align-items:center;justify-content:space-between}
+.sh-l{display:flex;flex-direction:column}
+.sh h1{font-size:24px;font-weight:700;color:#00C087;margin:0;letter-spacing:-0.2px;line-height:1.2}
+.sh p{font-size:11px;color:#8bccb8;font-weight:300;margin:2px 0 0;opacity:.9}
+.hs{min-height:auto;display:flex;align-items:center;justify-content:center;padding:20px 20px 40px;position:relative}
+.pf{width:340px;max-width:90vw;position:relative;background:linear-gradient(145deg,#1a1a1a 0%,#2d2d2d 50%,#1a1a1a 100%);border-radius:50px;padding:8px;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 30px 80px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.2);position:relative}
+.pf::after{content:"";position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:140px;height:5px;background:#333;border-radius:3px}
+.ps{background:#0b1929;border-radius:42px;overflow:hidden;height:600px;display:flex;flex-direction:column;position:relative;box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
+.th{background:#212b3d;padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05)}
+.tbk{width:24px;height:24px;color:#ffffff;cursor:pointer;opacity:.7}
+.ta{width:40px;height:40px;border-radius:50%;background:#d4a574;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;position:relative;flex-shrink:0}
+.tbd{position:absolute;top:-2px;right:-2px;width:18px;height:18px;background:#f44336;border-radius:50%;border:2px solid #212b3d;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff}
+.ti{flex:1;min-width:0}
+.tn{font-size:16px;font-weight:500;color:#fff;margin-bottom:2px}
+.ts{font-size:13px;color:#8e98a6}
+.tac{display:flex;gap:16px;align-items:center}
+.tic{width:22px;height:22px;color:#ffffff;opacity:.7;cursor:pointer}
+.messages{flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#0b1929}
+.ds{text-align:center;padding:16px 0 8px;color:#8e98a6;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);animation:fadeInUp .4s ease forwards}
+.mw{display:flex;gap:8px;align-items:flex-start;opacity:0;transform:translateY(10px);animation:fadeInUp .4s ease forwards;flex:1;min-height:0;justify-content:flex-end}
+.mw:last-child{margin-bottom:0}
+.ma{width:36px;height:36px;border-radius:50%;background:#d4a574;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0}
+.mc{flex:1;min-width:0;max-width:calc(100% - 44px);display:flex;flex-direction:column;height:100%}
+.ms{font-size:13px;color:#8e98a6;margin-bottom:4px;font-weight:500}
+.mb{background:#182533;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;max-width:100%;line-height:1.4;flex:1;min-height:0}
+.mbody{font-size:14px;color:#ffffff;line-height:1.5}
+.mbody a{color:#6ab7ff;text-decoration:none}
+.mbody .pnl{color:#4ade80;font-weight:600}
+.mbody .pnl.negative{color:#f87171}
+.mbody .metric-label{color:#8e98a6}
+.divider{text-align:center;color:#8e98a6;font-size:12px;padding:8px 0;margin:4px 0}
+@keyframes fadeInUp{to{opacity:1;transform:translateY(0)}}
+section{padding:80px 20px}
+section h2{font-size:36px;margin-bottom:30px;color:#00C087;text-align:center}
+.feat{background:transparent}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px;margin-top:40px}
+.fc{background:rgba(10,46,46,.5);padding:30px;border-radius:16px;border:1px solid rgba(0,192,135,.3);transition:transform .3s,border-color .3s;backdrop-filter:blur(10px)}
+.fc:hover{transform:translateY(-5px);border-color:#00C087}
+.fc h3{font-size:20px;margin-bottom:12px;color:#e0e6ed}
+.fc p{color:#8bccb8;font-size:14px}
+.tech{background:transparent;text-align:center}
+.tsk{display:flex;flex-wrap:wrap;justify-content:center;gap:15px;margin:30px 0 40px}
+.tb{background:rgba(10,46,46,.5);padding:10px 20px;border-radius:20px;font-size:14px;color:#8bccb8;border:1px solid rgba(0,192,135,.3);backdrop-filter:blur(10px)}
+.gb{display:inline-flex;align-items:center;gap:8px;background:#24292e;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;transition:background .2s,border-color .2s;border:1px solid rgba(255,255,255,.15);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.gb:hover{background:#2f363d;border-color:rgba(255,255,255,.25)}
+.gb svg{width:16px;height:16px;fill:currentColor}
+.cta{display:inline-flex;align-items:center;gap:8px;background:#24292e;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:500;font-size:16px;transition:background .2s,border-color .2s;border:1px solid rgba(255,255,255,.15);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.cta:hover{background:#2f363d;border-color:rgba(255,255,255,.25)}
+.cta svg{width:18px;height:18px;fill:currentColor}
+@media(max-width:768px){section h2{font-size:28px}.sh{padding:12px 20px 8px;flex-wrap:wrap;gap:12px}.sh-l{flex:1;min-width:0}.sh h1{font-size:20px}.sh p{font-size:10px}.gb{font-size:12px;padding:6px 12px}.gb svg{width:14px;height:14px}.hs{padding:16px 20px 32px}.pf{width:100%;max-width:320px}.fg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<svg style="display:none"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
+<div class="sh">
+<div class="sh-l">
+<h1>🐋 Hyperliquid Scanner</h1>
+<p>Automated Whale Tracker</p>
+</div>
+<a href="https://github.com/shelteredcorgi/hypescanner-tg" class="gb"><svg><use href="#gh"/></svg>View on GitHub</a>
+</div>
+<div class="hs">
+<div class="container">
+<div class="pf">
+<div class="ps">
+<div class="th">
+<svg class="tbk" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+<div class="ta">H<div class="tbd">7</div></div>
+<div class="ti">
+<div class="tn">hyperscancorgi</div>
+<div class="ts">bot</div>
+</div>
+<svg class="tic" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+<svg class="tic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+</div>
+<div class="messages" id="messages"></div>
+</div>
+</div>
+</div>
+</div>
+<section class="feat">
+<div class="container">
+<h2>Why Track Whales?</h2>
+<div class="fg">
+<div class="fc">
+<h3>📊 Real-Time P&L Tracking</h3>
+<p>Monitor unrealized and realized profits across all positions. See exactly how whale traders are performing.</p>
+</div>
+<div class="fc">
+<h3>🤖 Smart Bot Filtering</h3>
+<p>Automatically excludes high-frequency bot traders. Focus on the strategies that matter from real traders.</p>
+</div>
+<div class="fc">
+<h3>📱 Telegram Integration</h3>
+<p>Get beautiful, formatted recaps delivered directly to your Telegram. Clean, scannable format with emoji indicators.</p>
+</div>
+<div class="fc">
+<h3>⏰ 24-Hour Lookback</h3>
+<p>Always analyzes exactly the last 24 hours. Perfect for daily recaps via cron jobs or manual runs.</p>
+</div>
+<div class="fc">
+<h3>💼 Position Details</h3>
+<p>See up to 20 most recent trades with full details: asset, price, size, P&L, and timestamps.</p>
+</div>
+<div class="fc">
+<h3>🚀 Production Ready</h3>
+<p>Built for reliability with retry logic, error handling, and comprehensive logging. One command to run.</p>
+</div>
+</div>
+</div>
+</section>
+<section class="tech">
+<div class="container">
+<h2>Artisan Bytes Build With Handcrafted Tech</h2>
+<div class="tsk">
+<span class="tb">Python</span>
+<span class="tb">Hyperliquid API</span>
+<span class="tb">Telegram Bot</span>
+<span class="tb">Automated Monitoring</span>
+</div>
+<a href="https://github.com/shelteredcorgi/hypescanner-tg" class="cta"><svg><use href="#gh"/></svg>View on GitHub</a>
+</div>
+</section>
+<script>
+const messages=[
+{type:"recap",header:"📊 24H Recap: 0x06ce...164b",time:"Oct 28, 20:37 UTC",body:"🟢 Overall P&L: <span class='pnl'>+$134,770.66</span><br><span class='metric-label'>📈 24H P&L:</span> <span class='pnl'>+$0.00</span><br><span class='metric-label'>📝 Trades:</span> <strong>150</strong> | <span class='metric-label'>Positions:</span> <strong>5</strong><br><br><a href=\"#trades\" style=\"color:#6ab7ff;text-decoration:none;\">Click here for trades</a>",delay:200},
+{type:"recap",header:"📊 24H Recap: 0xf28e...085f",time:"Oct 28, 20:37 UTC",body:"🔴 Overall P&L: <span class='pnl negative'>-$142,060.56</span><br><span class='metric-label'>📈 24H P&L:</span> <span class='pnl negative'>-$17,136.62</span><br><span class='metric-label'>📝 Trades:</span> <strong>326</strong> | <span class='metric-label'>Positions:</span> <strong>24</strong><br><br><a href=\"#trades\" style=\"color:#6ab7ff;text-decoration:none;\">Click here for trades</a>",delay:500}
+];
+function createMessage(msg){
+const wrap=document.createElement("div");
+wrap.style.animationDelay=msg.delay+"ms";
+if(msg.type==="date"){
+wrap.className="ds";
+wrap.textContent=msg.text;
+wrap.style.opacity="0";
+wrap.style.transform="translateY(20px)";
+}else{
+wrap.className="mw";
+if(msg.type==="start"||msg.type==="status"){
+wrap.innerHTML=`<div class="ma">H</div><div class="mc"><div class="ms">hyperscancorgi</div><div class="mb"><div class="mbody">${msg.text}</div></div></div>`;
+}else if(msg.type==="recap"){
+wrap.innerHTML=`<div class="ma">H</div><div class="mc"><div class="ms">hyperscancorgi</div><div class="mb"><div class="mbody">${msg.header}<br><span style="color:#8e98a6;font-size:12px">${msg.time}</span><br><br>${msg.body}</div></div></div>`;
+}
+}
+return wrap;
+}
+function initMessages(){
+const container=document.getElementById("messages");
+messages.forEach((msg)=>setTimeout(()=>container.appendChild(createMessage(msg)),msg.delay));
+}
+initMessages();
+</script>
+</body>
+</html>
+
