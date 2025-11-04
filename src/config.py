@@ -71,6 +71,9 @@ LOG_MAX_BYTES = int(os.getenv("LOG_MAX_BYTES", "52428800"))
 LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "5"))
 SELF_MONITORING_INTERVAL = int(os.getenv("SELF_MONITORING_INTERVAL", "300"))
 
+# State management
+STATE_FILE_PATH = os.getenv("STATE_FILE_PATH", "state/last_scan.json")
+
 
 def validate_config():
     """Check required settings are present."""

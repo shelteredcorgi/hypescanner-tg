@@ -61,10 +61,10 @@ class RecapNotifier:
 
     def send_wallet_recap(self, summary: Dict) -> bool:
         """
-        Send 24-hour recap for a single wallet.
+        Send recap for a single wallet.
 
         Args:
-            summary: Wallet summary dictionary from WalletRecap
+            summary: Wallet summary dictionary from WalletRecap (must include 'scan_type')
 
         Returns:
             True if sent successfully
@@ -77,7 +77,7 @@ class RecapNotifier:
         Format wallet summary into beautiful Telegram message.
 
         Args:
-            summary: Wallet summary with trades, P&L, etc.
+            summary: Wallet summary with trades, P&L, etc. (must include 'scan_type')
 
         Returns:
             HTML-formatted message string
@@ -92,6 +92,7 @@ class RecapNotifier:
         trade_count = summary["trade_count"]
         position_count = summary["position_count"]
         trades = summary["trades"]
+        scan_type = summary.get("scan_type", "24h")
 
         # Format P&L with colors
         overall_sign = "+" if overall_pnl >= 0 else ""
@@ -100,16 +101,32 @@ class RecapNotifier:
         overall_emoji = "🟢" if overall_pnl >= 0 else "🔴"
         daily_emoji = "📈" if daily_pnl >= 0 else "📉"
 
-        # Build header
+        # Build header with scan type label
         now_utc = datetime.now(timezone.utc)
         timestamp = now_utc.strftime("%b %d, %H:%M UTC")
 
+        # Determine scan type label
+        if scan_type == "1h":
+            scan_label = "1H Recap"
+        elif scan_type == "incremental":
+            scan_label = "Since Last Run Recap"
+        else:
+            scan_label = "24H Recap"
+
+        # P&L label based on scan type
+        if scan_type == "1h":
+            pnl_label = "1H P&L"
+        elif scan_type == "incremental":
+            pnl_label = "Period P&L"
+        else:
+            pnl_label = "24H P&L"
+
         lines = [
-            f"<b>📊 24H Recap: {wallet_link}</b>",
+            f"<b>📊 {scan_label}: {wallet_link}</b>",
             f"<i>{timestamp}</i>",
             "",
             f"{overall_emoji} <b>Overall P&L:</b> {overall_sign}${overall_pnl:,.2f}",
-            f"{daily_emoji} <b>24H P&L:</b> {daily_sign}${daily_pnl:,.2f}",
+            f"{daily_emoji} <b>{pnl_label}:</b> {daily_sign}${daily_pnl:,.2f}",
             f"📝 <b>Trades:</b> {trade_count} | <b>Positions:</b> {position_count}",
         ]
 
@@ -170,7 +187,12 @@ class RecapNotifier:
                 lines.append(f"<i>... and {remaining_assets} more asset{'s' if remaining_assets != 1 else ''} traded</i>")
         else:
             lines.append("")
-            lines.append("💤 <i>No trades in the last 24 hours</i>")
+            if scan_type == "1h":
+                lines.append("💤 <i>No trades in the last hour</i>")
+            elif scan_type == "incremental":
+                lines.append("💤 <i>No trades since last run</i>")
+            else:
+                lines.append("💤 <i>No trades in the last 24 hours</i>")
 
         # Add footer separator
         lines.append("")
@@ -247,15 +269,31 @@ class RecapNotifier:
 
         return trade_line
 
-    def send_startup_message(self) -> bool:
-        """Send startup notification."""
+    def send_startup_message(self, scan_type: str = "24h") -> bool:
+        """
+        Send startup notification.
+
+        Args:
+            scan_type: Type of scan being run ("24h", "1h", or "incremental")
+        """
         now = datetime.now(timezone.utc)
         timestamp = now.strftime("%b %d, %Y %H:%M UTC")
 
+        # Determine scan type label
+        if scan_type == "1h":
+            scan_label = "1H Tracker"
+            scan_desc = "1-hour recaps"
+        elif scan_type == "incremental":
+            scan_label = "Incremental Tracker"
+            scan_desc = "incremental recaps since last run"
+        else:
+            scan_label = "24H Tracker"
+            scan_desc = "24-hour recaps"
+
         message = (
-            f"🚀 <b>Hyperliquid 24H Tracker Started</b>\n"
+            f"🚀 <b>Hyperliquid {scan_label} Started</b>\n"
             f"<i>{timestamp}</i>\n\n"
-            f"Generating 24-hour recaps for tracked wallets..."
+            f"Generating {scan_desc} for tracked wallets..."
         )
 
         return self.send_message(message)

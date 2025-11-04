@@ -1,5 +1,33 @@
 #!/bin/bash
-# Quick command to run 24-hour recap
+# Quick command to run recaps
+# Usage: ./recap [24h|1h|inc]
+# Default: 24h scan
 
-source venv/bin/activate
-python -m src.main
+cd "$(dirname "$0")"
+
+# Activate virtual environment if it exists
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+
+# Parse argument
+SCAN_TYPE="${1:-24h}"
+
+case "$SCAN_TYPE" in
+    1h|--1h)
+        python -m src.main --1h
+        ;;
+    inc|incremental|--incremental)
+        python -m src.main --incremental
+        ;;
+    24h|--24h|"")
+        python -m src.main
+        ;;
+    *)
+        echo "Usage: ./recap [24h|1h|inc]"
+        echo "  ./recap       - 24-hour scan (default)"
+        echo "  ./recap 1h    - 1-hour scan"
+        echo "  ./recap inc   - Incremental scan since last run"
+        exit 1
+        ;;
+esac

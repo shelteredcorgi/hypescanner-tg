@@ -234,6 +234,78 @@ class HyperliquidAPI:
             logger.error(f"Failed to fetch fills for {wallet_address}: {e}")
             return []
 
+    def get_user_fills_1h(self, wallet_address: str) -> List[Dict]:
+        """
+        Fetch user trade fills from the last 1 hour.
+
+        Args:
+            wallet_address: Ethereum address to query
+
+        Returns:
+            List of fill (trade) dictionaries
+        """
+        try:
+            from datetime import datetime, timezone, timedelta
+
+            # Calculate 1 hour ago in milliseconds
+            now = datetime.now(timezone.utc)
+            start_time = int((now - timedelta(hours=1)).timestamp() * 1000)
+
+            logger.debug(f"Fetching fills for {wallet_address} from last 1h")
+            fills = self._retry_wrapper(
+                self.info.user_fills_by_time,
+                wallet_address,
+                start_time,
+                aggregate_by_time=True
+            )
+
+            logger.info(f"Fetched {len(fills) if fills else 0} fills for {self._format_address(wallet_address)}")
+            return fills or []
+
+        except HyperliquidAPIError as e:
+            logger.error(f"Failed to fetch fills for {wallet_address}: {e}")
+            return []
+
+    def get_user_fills_since(self, wallet_address: str, start_timestamp_ms: int) -> List[Dict]:
+        """
+        Fetch user trade fills since a specific timestamp.
+
+        Args:
+            wallet_address: Ethereum address to query
+            start_timestamp_ms: Unix timestamp in milliseconds to fetch from
+
+        Returns:
+            List of fill (trade) dictionaries
+        """
+        try:
+            from datetime import datetime, timezone, timedelta
+
+            # Limit lookback to max 24 hours to prevent huge data fetches
+            now = datetime.now(timezone.utc)
+            max_lookback = int((now - timedelta(hours=24)).timestamp() * 1000)
+            start_time = max(start_timestamp_ms, max_lookback)
+
+            if start_time != start_timestamp_ms:
+                logger.warning(
+                    f"Start timestamp {start_timestamp_ms} is more than 24h ago. "
+                    f"Limiting to {start_time}"
+                )
+
+            logger.debug(f"Fetching fills for {wallet_address} since {start_time}")
+            fills = self._retry_wrapper(
+                self.info.user_fills_by_time,
+                wallet_address,
+                start_time,
+                aggregate_by_time=True
+            )
+
+            logger.info(f"Fetched {len(fills) if fills else 0} fills for {self._format_address(wallet_address)}")
+            return fills or []
+
+        except HyperliquidAPIError as e:
+            logger.error(f"Failed to fetch fills for {wallet_address}: {e}")
+            return []
+
     def get_user_portfolio(self, wallet_address: str) -> Optional[Dict]:
         """
         Fetch user portfolio performance data including historical P&L.
